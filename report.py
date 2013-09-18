@@ -54,6 +54,6 @@ def long_format(line):
     print "* %s %s review: %s" % ('/'.join(line.priorities), line.url, line.change)
     print "\ttitle: '%s'" % line.title
     print "\tvotes: +2:%s, +1:%s, -1:%s, -2:%s" % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0)),
-    print " age: %s days" % (line.days_old)
+    print " age: %s days revision: %s" % (line.days_old, line.revision)
 
 report.write(long_format, lambda line: cat[line.category] )

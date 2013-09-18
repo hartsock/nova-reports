@@ -11,7 +11,7 @@ __author__ = 'hartsocks'
 
 CACHE_DIR = '~/.launchpad_cache'
 
-REPORT_COLUMNS = ['bug_id', 'votes', 'url', 'change', 'priorities', 'rank', 'days_old', 'category', 'title']
+REPORT_COLUMNS = ['bug_id', 'votes', 'url', 'change', 'priorities', 'rank', 'days_old', 'category', 'title', 'revision']
 
 Info = collections.namedtuple('Info', ['tasks', 'bug', 'change'])
 ReportLine = collections.namedtuple('ReportLine', REPORT_COLUMNS)
@@ -109,6 +109,7 @@ class BugReport(object):
                 days_old = gerrit.days_old(bug_id),
                 category = Report.categorize(votes_summary, trusted),
                 title=info.bug.title,
+                revision=gerrit.change_last_revision_number(info.change)
             )
             report.append(line)
 
