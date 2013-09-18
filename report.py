@@ -1,4 +1,5 @@
 import datasources.reporting
+import datetime
 from optparse import OptionParser
 
 __author__ = 'hartsocks'
@@ -34,6 +35,9 @@ titles = dict(
     core="ready for core",
     approval="needs one more +2/approval")
 
+print
+print datetime.date.today()
+print
 print "Ordered by priority:"
 def short_format(line):
     print "* %s %s %s readiness:%s" % ( '/'.join(line.priorities), line.url, line.change, titles.get(line.category, '?'))
@@ -48,7 +52,7 @@ def long_format(line):
     global last_category
     if line.category != last_category:
         print
-        print titles[line.category]
+        print "== %s ==" % titles[line.category]
         last_category = line.category
     v = datasources.reporting.BugReport.vote_summary(line.votes)
     print "* %s %s review: %s" % ('/'.join(line.priorities), line.url, line.change)
