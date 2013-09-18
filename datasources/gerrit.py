@@ -68,8 +68,8 @@ class Gerrit(object):
         return v
 
     def latest_patchset(self, bug_id):
-        review = self.get(bug_id)
-        return review['patchSets'][-1]
+        change = self.get(bug_id)
+        return self.last_patchset(change)
 
     def files(self, bug_id):
         list = []
@@ -87,7 +87,7 @@ class Gerrit(object):
                 return True
 
     def check_files(self, json_row, phrase='vmware'):
-        patchset = json_row['patchSets'][-1]
+        patchset = self.last_patchset(json_row)
         for entry in patchset['files']:
             if phrase in entry['file']:
                 return True
