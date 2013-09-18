@@ -109,7 +109,8 @@ class Gerrit(object):
         return age.days
 
     def days_old(self, bug_id):
-        patchset = self.last_patchset(bug_id)
+        change = self.get(bug_id)
+        patchset = self.last_patchset(change)
         return self.patch_set_age(patchset)
 
     def change_age_last_revision(self, change):
