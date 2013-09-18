@@ -80,13 +80,20 @@ class BugReport(object):
         bugs = {}
         gerrit = datasources.gerrit.Gerrit(query, gerrit_port)
         for bug_id in gerrit.bugs:
-            if tag in launchpad.bugs[bug_id].tags:
-                tasks_url = launchpad.bugs[bug_id].bug_tasks_collection_link
-                bug_tasks = datasources.launchpad.Tasks(tasks_url)
-                bugs[bug_id] = Info(
-                    change = gerrit.get(bug_id),
-                    bug = launchpad.bugs[bug_id],
-                    tasks = bug_tasks)
+            try:
+                bug = launchpad.bugs[bug_id]
+                tags = bug.tags
+                if tag in tags:
+                    tasks_url = launchpad.bugs[bug_id].bug_tasks_collection_link
+                    bug_tasks = datasources.launchpad.Tasks(tasks_url)
+                    bugs[bug_id] = Info(
+                        change = gerrit.get(bug_id),
+                        bug = launchpad.bugs[bug_id],
+                        tasks = bug_tasks)
+            except KeyError:
+                # could not find bug_id in launchpad
+                print "could not find bug: %s" % bug_id
+                pass
 
         report = []
         for bug_id in bugs.keys():

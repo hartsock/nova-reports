@@ -10,7 +10,7 @@ parser.add_option("-t", "--tag", dest="tag", default="vmware",
                   help="generate a report for a tag")
 parser.add_option("-p", "--project", dest="project_name", default="openstack/nova",
                   help="generate a report for a project")
-parser.add_option("-m", "--message", dest="gerrit_message", default="bug",
+parser.add_option("-m", "--message", dest="gerrit_message", default=None,
                   help="text to look for in gerrit messages")
 parser.add_option("-l", "--trusted-list", dest="trusted_list_str", default="",
                   help="list of trusted reviewers, comma delimited")

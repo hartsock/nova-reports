@@ -20,6 +20,7 @@ class Gerrit(object):
         #TODO(hartsocks): this should be rewritten without the _reviews map
         self._reviews = {}
         self._data = []
+        self._bug_ids = []
         command = LOAD_COMMAND % (port, query)
         raw_data_handle = os.popen(command)
         for raw_data in raw_data_handle.readlines():
@@ -27,20 +28,21 @@ class Gerrit(object):
             message = json_row['commitMessage']
             bugs = Gerrit.bugs_from_comment(message)
             json_row['bugs'] = bugs
-            for bug in bugs:
+            for bug_id in bugs:
+                self._bug_ids.append(bug_id)
                 # TODO(hartsocks): this block is bad, rewrite
-                if self._reviews.has_key(bug):
+                if self._reviews.has_key(bug_id):
                     # allow a list of changes since one bug
                     # may inspire multiple change sets
-                    prev = self._reviews[bug]
+                    prev = self._reviews[bug_id]
                     next = [prev]
                     if isinstance(prev, list):
                         # whoops, prev is already a list
                         next = prev
                     # builds up a list of changes per bug
                     next.append(json_row)
-                    self._reviews[bug] = next
-                self._reviews[bug] = json_row
+                    self._reviews[bug_id] = next
+                self._reviews[bug_id] = json_row
             self._data.append(json_row)
 
     def get(self, bug_id):
@@ -135,7 +137,7 @@ class Gerrit(object):
 
     @property
     def bugs(self):
-        return self._reviews.keys()
+        return self._bug_ids
 
     @property
     def data(self):
@@ -143,10 +145,10 @@ class Gerrit(object):
 
     @staticmethod
     def bug_from_comment(comment):
-        expr = u'bug.?\s*(\d{1,}).*'
+        expr = u'.*(fixes\s\w+|bug|lp|lp#)\D*(\d{1,}).*'
         res = re.compile(expr, re.IGNORECASE).search(comment)
         if res:
-            return res.group(1)
+            return res.group(2)
 
     @staticmethod
     def bugs_from_comment(comment):
