@@ -55,6 +55,7 @@ class Report(object):
             if 2 < len(vote_detail.get('1',[])):
                 category = 2
         elif 4 < len(vote_detail.get('1',[])):
+            # 2 votes come from jenkins and smokestack
             category = 2
 
         if len(vote_detail.get('2', [])):
