@@ -2,7 +2,7 @@
 import json
 import os
 import re
-import string
+import copy
 
 from datetime import date
 
@@ -109,6 +109,8 @@ class Change(object):
         self._blueprints = blueprints
         self._gerrit = gerrit
         self._categorizer = categorizer
+        self._last_patchset = None
+        self._first_patchset = None
 
     def __len__(self):
         return self._change.__len__()
@@ -124,11 +126,15 @@ class Change(object):
 
     @property
     def json(self):
-        return self._change
+        return copy.deepcopy(self._change)
 
     @property
     def bugs(self):
         return set(self._bugs)
+
+    @property
+    def blueprints(self):
+        return set(self._blueprints)
 
     def for_bug(self, bug_id):
         return bug_id in self._bugs
@@ -137,13 +143,28 @@ class Change(object):
     def url(self):
         return self._change['url']
 
+    def filter_patchsets(self, patchsets, filter):
+        found = None
+        for current in patchsets:
+            if filter(current, found):
+                found = current
+        return copy.deepcopy(found)
+
     @property
     def last_patchset(self):
-        patchset = self._change['patchSets'][-1]
-        for pset in self._change['patchSets']:
-            if int(pset['number']) > int(patchset['number']):
-                patchset = pset
-        return patchset
+        if not self._last_patchset:
+            filter = lambda next,last: last is None or int(next['number']) > int(last['number'])
+            patchsets = self.json['patchSets']
+            self._last_patchset = self.filter_patchsets(patchsets, filter)
+        return copy.deepcopy(self._last_patchset)
+
+    @property
+    def first_patchset(self):
+        if not self._first_patchset:
+            filter = lambda next,last: last is None or next['createdOn'] < last['createdOn']
+            patchsets = self.json['patchSets']
+            self._first_patchset = self.filter_patchsets(patchsets, filter)
+        return copy.deepcopy(self._first_patchset)
 
     @property
     def votes(self):
@@ -188,14 +209,30 @@ class Change(object):
         patchset = self.last_patchset
         return patchset['number']
 
-    @property
-    def age(self):
-        patchset = self.last_patchset
-        created_on = patchset['createdOn']
-        created = date.fromtimestamp(created_on)
+    def calculate_age(self, timestamp):
+        created = date.fromtimestamp(timestamp)
         now = date.today()
         age = now - created
         return age.days
+
+    @property
+    def last_updated(self):
+        last_updated = self.json['lastUpdated']
+        return self.calculate_age(last_updated)
+
+    @property
+    def age(self):
+        patchset = self.last_patchset
+        timestamp = patchset['createdOn']
+        approvals = [a for a in patchset['approvals'] if a['by']['username'] == 'jenkins']
+        if approvals:
+            timestamp = approvals[0]['grantedOn']
+        return self.calculate_age(timestamp)
+
+    @property
+    def total_age(self):
+        patchset = self.first_patchset
+        return self.calculate_age(patchset['createdOn'])
 
     @property
     def category(self):

@@ -88,6 +88,7 @@ Change-Id: I8c2e58d3eb5e001eff3c9354c3cdc593469b23ac"""
 Need to protect the host name with '[' and ']' before
 we create a http/https connection
 
+Fixes: bug #1207064
 Closes-LP# 1224479
 Fixes-bug: 123456
 obliterates-lp #654321
@@ -95,4 +96,4 @@ obliterates-lp #654321
 Change-Id: I8c2e58d3eb5e001eff3c9354c3cdc593469b23ac"""
         bugs = datasources.gerrit.Gerrit.bugs_from_comment(comment)
         print bugs
-        self.assertEqual(['1224479', '123456', '654321'], bugs)
+        self.assertEqual(['1207064', '1224479', '123456', '654321'], bugs)

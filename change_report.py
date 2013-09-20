@@ -24,38 +24,6 @@ print
 print datetime.date.today()
 print
 
-bug_report = datasources.reporting.BugReport(
-    trusted=options.trusted_list_str.split(','),
-    tag=options.tag,
-    project=options.project_name,
-    message_text=options.gerrit_message,
-    gerrit_port=options.gerrit_port
-)
-
-cat = dict(unknown=1, revise=0, review=-1, core=-2, approval=-3)
-titles = dict(
-    unknown="other",
-    revise="needs revision",
-    review="needs review",
-    core="ready for core",
-    approval="needs one more +2/approval")
-
-print "Ordered by bug priority:"
-def short_format(line):
-    print " %s %s " % ( '/'.join(line.priorities), line.url)
-    for change in line.changes:
-        v = change.vote_summary
-        votes = "+2:%s,+1:%s,-1:%s,-2:%s" % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0))
-        print " \t\t\t %s votes:(%s), status: %s" % \
-              (change.url,
-               votes,
-               titles.get(change.category, ' ? '))
-    print ""
-
-bug_report.write(short_format)
-print
-print "-" * 80
-
 change_report = datasources.reporting.ChangeReport(
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
@@ -63,7 +31,15 @@ change_report = datasources.reporting.ChangeReport(
     message_text=options.gerrit_message,
     gerrit_port=options.gerrit_port
 )
+
 print "Ordered by fitness for review:"
+cat = dict(unknown=1, revise=0, review=-1, core=-2, approval=-3)
+titles = dict(
+    unknown="other",
+    revise="needs revision",
+    review="needs review",
+    core="ready for core",
+    approval="needs one more +2/approval")
 
 last_category = None
 def long_format(change):
@@ -74,8 +50,19 @@ def long_format(change):
         last_category = change.category
     v = change.vote_summary
     print "* %s" % change.url
-    print "\ttitle: '%s'" % change.title
-    print "\tvotes: +2:%s, +1:%s, -1:%s, -2:%s." % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0)),
-    print "+%s days in progress, revision: %s is %s days old " % (change.total_age, change.revision, change.age)
+    print "\ttitle: '%s'" % change.title,
+
+    if change.bugs:
+        print ", bugs: %s" % ','.join(change.bugs),
+
+    if change.blueprints:
+        print ", blueprints: %s" % ','.join(change.blueprints)
+    else:
+        print ""
+
+    print "\tvotes: +2:%s, +1:%s, -1:%s, -2:%s." % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0))
+    print "\t\t+in progress +%s days, revision: #%s, last touched: %s days ago " % (
+        change.total_age, change.revision, change.last_updated)
+    print
 
 change_report.report_for_tag('vmware', lambda change: change.category, long_format)
