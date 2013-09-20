@@ -11,85 +11,69 @@ __author__ = 'hartsocks'
 
 CACHE_DIR = '~/.launchpad_cache'
 
-REPORT_COLUMNS = ['bug_id', 'votes', 'url', 'change', 'priorities', 'rank', 'days_old', 'category', 'title', 'revision']
+REPORT_COLUMNS = ['bug_id', 'url', 'priorities', 'rank', 'title', 'changes']
 
-Info = collections.namedtuple('Info', ['tasks', 'bug', 'change'])
+Info = collections.namedtuple('Info', ['tasks', 'bug', 'changes'])
 ReportLine = collections.namedtuple('ReportLine', REPORT_COLUMNS)
-
-CATEGORIES = dict(unknown=-1, revise=0, review=1, core=2, approval=3)
-CATEGORY_LIST = ['revise', 'review', 'core', 'approval']
-# revise = has -1
-# review = no votes
 
 class Report(object):
 
-    @staticmethod
-    def has_trusted(voters, trusted):
-        for trustee in trusted:
-            if trustee in voters:
-                return True
+    def __init__(self, **kwargs):
+        self.gerrit_port = kwargs.pop('gerrit_port')
+        self.trusted = kwargs.pop('trusted')
+        self.tag = kwargs.pop('tag')
 
-    @staticmethod
-    def all_trusted(voters, trusted):
-        for trustee in trusted:
-            if not (trustee in voters):
-                return False
-        return True
-
-    @staticmethod
-    def categorize(vote_detail, trusted=None):
-        if not trusted:
-            trusted = []
-
-        #trusted.append('jenkins')
-        #trusted.append('smokestack')
-
-        if 0 < len(vote_detail.get('-2', [])):
-            return 'revise'
-
-        if vote_detail.get('-1', []):
-            return 'revise'
-
-        category = 1
-        if Report.has_trusted(vote_detail.get('1', []), trusted):
-            if 2 < len(vote_detail.get('1',[])):
-                category = 2
-        elif 4 < len(vote_detail.get('1',[])):
-            # 2 votes come from jenkins and smokestack
-            category = 2
-
-        if len(vote_detail.get('2', [])):
-            category = 3
-
-        return CATEGORY_LIST[category]
-
-class BugReport(object):
-    def __init__(self,**kwargs):
-        gerrit_port = kwargs.pop('gerrit_port')
-        trusted = kwargs.pop('trusted')
-        tag = kwargs.pop('tag')
         project = kwargs.pop('project')
         message_text = kwargs.pop('message_text')
 
-        query = "status:open project:%s" % project
+        self.query = "status:open project:%s" % project
         if message_text:
-            query = "%s message:%s" % (query, message_text)
+            self.query = "%s message:%s" % (self.query, message_text)
 
-        launchpad = Launchpad.login_anonymously(
+        self.launchpad = Launchpad.login_anonymously(
             'anon', 'https://api.launchpad.net/', CACHE_DIR)
 
+        self.categorizer = datasources.gerrit.Categorizer(self.trusted)
+        self.gerrit = datasources.gerrit.Gerrit(self.query, self.gerrit_port, self.categorizer)
+        self._data = []
+
+    def tasks(self, bug_id):
+        try:
+            tasks_url = self.launchpad.bugs[bug_id].bug_tasks_collection_link
+            bug_tasks = datasources.launchpad.Tasks(tasks_url)
+            return bug_tasks
+        except:
+            return None
+
+    def tags_for_bug(self, bug_id):
+        bug = self.launchpad.bugs[bug_id]
+        tags = bug.tags
+        return tags
+
+    def sort_report(self, key_lambda=None):
+        if key_lambda is None:
+            key_lambda = lambda line: line.rank * -1
+        return sorted(self._data, key=key_lambda)
+
+    def write(self, format, sort_key_lambda=None):
+        for line in self.sort_report(sort_key_lambda):
+            format(line)
+
+
+class BugReport(Report):
+    # a report that is bug centric
+
+    def __init__(self,**kwargs):
+        super(BugReport, self).__init__(**kwargs)
         bugs = {}
-        gerrit = datasources.gerrit.Gerrit(query, gerrit_port)
-        for bug_id in gerrit.bugs:
+        for bug_id in self.gerrit.bugs:
             try:
-                bug = launchpad.bugs[bug_id]
-                tags = bug.tags
-                if tag in tags:
-                    tasks_url = launchpad.bugs[bug_id].bug_tasks_collection_link
-                    bug_tasks = datasources.launchpad.Tasks(tasks_url)
+                tags = self.tags_for_bug(bug_id)
+                if self.tag in tags:
+                    bug_tasks = self.tasks(bug_id)
                     bugs[bug_id] = Info(
-                        change = gerrit.get(bug_id),
-                        bug = launchpad.bugs[bug_id],
+                        changes = self.gerrit.get(bug_id),
+                        bug = self.launchpad.bugs[bug_id],
                         tasks = bug_tasks)
             except KeyError:
                 # could not find bug_id in launchpad
@@ -99,25 +83,21 @@ class BugReport(object):
         report = []
         for bug_id in bugs.keys():
             info = bugs.get(bug_id)
-            votes_summary = gerrit.votes(bug_id)
             line = ReportLine(
                 bug_id = bug_id,
-                votes = votes_summary,
                 url = info.bug.web_link,
-                change = gerrit.get_url(bug_id),
+
                 priorities = info.tasks.priorities,
                 rank = info.tasks.rank,
-                days_old = gerrit.days_old(bug_id),
-                category = Report.categorize(votes_summary, trusted),
                 title=info.bug.title,
-                revision=gerrit.change_last_revision_number(info.change)
+
+                # change to list
+                changes = info.changes
             )
             report.append(line)
 
-        self._report = report
+        self._data = report
         self._bugs = bugs
-        self._launchpad = launchpad
-        self._gerrit = gerrit
 
     @property
     def bug_ids(self):
@@ -125,34 +105,7 @@ class BugReport(object):
 
     @property
     def report(self):
-        return sorted(self._report, key=lambda line: line.rank * -1)
-
-    def sort_report(self, key_lambda=None):
-        if key_lambda is None:
-            key_lambda = lambda line: line.rank * -1
-        return sorted(self._report, key=key_lambda)
-
-    @property
-    def gerrit(self):
-        return self._gerrit
-
-    @property
-    def launchpad(self):
-        return self._launchpad
-
-    @staticmethod
-    def vote_summary(votes):
-        vote_summary = {
-            '-2': len(votes.get('-2', [])),
-            '-1': len(votes.get('-1', [])),
-            '1': len(votes.get('1', [])),
-            '2': len(votes.get('2', []))
-        }
-        return vote_summary
-
-    def write(self, format, sort_key_lambda=None):
-        for line in self.sort_report(sort_key_lambda):
-            format(line)
+        return sorted(self._data, key=lambda line: line.rank * -1)
 
     def __str__(self):
         output = StringIO.StringIO()
@@ -160,18 +113,11 @@ class BugReport(object):
         output.write('\n')
 
         for line in self.report:
-            vote_summary = BugReport.vote_summary(line.votes)
 
             output.write(line.bug_id)
             output.write(' ,')
 
-            output.write(str(vote_summary))
-            output.write(' ,')
-
             output.write(line.url)
-            output.write(' ,')
-
-            output.write(line.change)
             output.write(' ,')
 
             output.write('/'.join(line.priorities))
@@ -180,10 +126,56 @@ class BugReport(object):
             output.write(str(line.rank))
             output.write(' ,')
 
-            output.write(str(line.days_old))
-            output.write(' ,')
-
-            output.write(line.category)
-            output.write('\n')
+            for change in line.changes:
+                output.write(change.url)
 
         return output.getvalue()
+
+class ChangeReport(Report):
+
+    def __init__(self, **kwargs):
+        super(ChangeReport, self).__init__(**kwargs)
+        self._data = self.gerrit.changes
+
+    @property
+    def changes(self):
+        return self.gerrit.changes
+
+    def filter_by_tag(self, tag):
+        for change in self.changes:
+            bugs = change.bugs
+            for bug_id in bugs:
+                tags = self.tags_for_bug(bug_id)
+                if tag in tags:
+                    yield change
+
+    def changes_for_tag(self, tag, key_lambda=None):
+        if not key_lambda:
+            key_lambda = lambda change: change.age * -1
+
+        changes = self.filter_by_tag(tag)
+        return sorted(changes, key=key_lambda)
+
+    def report_for_tag(self, tag, key_lambda, formatter):
+        for change in self.changes_for_tag(tag, key_lambda):
+            formatter(change)
+
+    def bugs_for_change(self, change):
+        bug_list = []
+        bug_ids = change.bugs
+        for bug_id in bug_ids:
+            try:
+                bug_list.append(self.launchpad.bugs[bug_id])
+            except:
+                pass
+        return bug_list
+
+    def priorities_for_change(self, change):
+        out = []
+        bug_ids = change.bugs
+        for bug_id in bug_ids:
+            tasks = self.tasks(bug_id)
+            if tasks:
+                for p in tasks.priorities:
+                    out.append(p)
+        return out

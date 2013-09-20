@@ -80,3 +80,19 @@ Change-Id: I8c2e58d3eb5e001eff3c9354c3cdc593469b23ac"""
         bugs = datasources.gerrit.Gerrit.bugs_from_comment(comment)
         print bugs
         self.assertEqual(['1224479'], bugs)
+
+    def test_closes_hard_from_comment(self):
+        comment = """
+[VMware] Fix problem transferring files with ipv6 host
+
+Need to protect the host name with '[' and ']' before
+we create a http/https connection
+
+Closes-LP# 1224479
+Fixes-bug: 123456
+obliterates-lp #654321
+
+Change-Id: I8c2e58d3eb5e001eff3c9354c3cdc593469b23ac"""
+        bugs = datasources.gerrit.Gerrit.bugs_from_comment(comment)
+        print bugs
+        self.assertEqual(['1224479', '123456', '654321'], bugs)

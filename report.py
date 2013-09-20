@@ -19,7 +19,12 @@ parser.add_option("-g", "--gerrit-port", dest="gerrit_port",
                   help="Port number to use when working with gerrit via ssh.")
 (options, args) = parser.parse_args()
 
-report = datasources.reporting.BugReport(
+print "Starting report run..."
+print
+print datetime.date.today()
+print
+
+bug_report = datasources.reporting.BugReport(
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
     project=options.project_name,
@@ -35,29 +40,42 @@ titles = dict(
     core="ready for core",
     approval="needs one more +2/approval")
 
-print
-print datetime.date.today()
-print
-print "Ordered by priority:"
+print "Ordered by bug priority:"
 def short_format(line):
-    print "* %s %s %s readiness:%s" % ( '/'.join(line.priorities), line.url, line.change, titles.get(line.category, '?'))
-    #print "** %s " % line.title
-report.write(short_format)
+    print " %s %s " % ( '/'.join(line.priorities), line.url)
+    for change in line.changes:
+        v = change.vote_summary
+        votes = "+2:%s,+1:%s,-1:%s,-2:%s" % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0))
+        print " \t\t\t %s votes:(%s), status: %s" % \
+              (change.url,
+               votes,
+               titles.get(change.category, ' ? '))
+    print ""
+
+bug_report.write(short_format)
 print
 print "-" * 80
+
+change_report = datasources.reporting.ChangeReport(
+    trusted=options.trusted_list_str.split(','),
+    tag=options.tag,
+    project=options.project_name,
+    message_text=options.gerrit_message,
+    gerrit_port=options.gerrit_port
+)
 print "Ordered by fitness for review:"
 
 last_category = None
-def long_format(line):
+def long_format(change):
     global last_category
-    if line.category != last_category:
+    if change.category != last_category:
         print
-        print "== %s ==" % titles[line.category]
-        last_category = line.category
-    v = datasources.reporting.BugReport.vote_summary(line.votes)
-    print "* %s %s review: %s" % ('/'.join(line.priorities), line.url, line.change)
-    print "\ttitle: '%s'" % line.title
+        print "== %s ==" % titles[change.category]
+        last_category = change.category
+    v = change.vote_summary
+    print "* %s" % change.url
+    print "\ttitle: '%s'" % change.title
     print "\tvotes: +2:%s, +1:%s, -1:%s, -2:%s" % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0)),
-    print " age: %s days revision: %s" % (line.days_old, line.revision)
+    print " age: %s days revision: %s" % (change.age, change.revision)
 
-report.write(long_format, lambda line: cat[line.category] )
+change_report.report_for_tag('vmware', lambda change: change.category, long_format)

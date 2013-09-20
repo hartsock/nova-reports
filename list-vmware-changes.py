@@ -19,7 +19,7 @@ print gerrit.count
 print "A list of changes that touch files with '%s' in their path names" % path_string
 count = 0
 for change in gerrit.changes_for(path_string):
-    change['age'] = gerrit.change_age_last_revision(change)
+    change['age'] = change.age
     print "* %(url)s age: %(age)s days" % change
     count += 1
 print "Changes: %s" % count
