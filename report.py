@@ -42,15 +42,8 @@ titles = dict(
 
 print "Ordered by bug priority:"
 def short_format(line):
-    print " %s %s " % ( '/'.join(line.priorities), line.url)
-    for change in line.changes:
-        v = change.vote_summary
-        votes = "+2:%s,+1:%s,-1:%s,-2:%s" % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0))
-        print " \t\t\t %s votes:(%s), status: %s" % \
-              (change.url,
-               votes,
-               titles.get(change.category, ' ? '))
-    print ""
+    categories = [titles.get(change.category, ' ? ') for change in line.changes]
+    print " %s %s %s" % ( '/'.join(line.priorities), line.url, ','.join(categories))
 
 bug_report.write(short_format)
 print
