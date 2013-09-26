@@ -61,8 +61,6 @@ def long_format(change):
         print ""
 
     print "\tvotes: +2:%s, +1:%s, -1:%s, -2:%s." % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0))
-    print "\t\t+in progress +%s days, revision: #%s, last touched: %s days ago " % (
-        change.total_age, change.revision, change.last_updated)
     print
 
 change_report.report_for_tag('vmware', lambda change: change.category, long_format)
