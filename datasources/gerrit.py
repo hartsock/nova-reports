@@ -224,7 +224,7 @@ class Change(object):
     def age(self):
         patchset = self.last_patchset
         timestamp = patchset['createdOn']
-        approvals = [a for a in patchset.get('approvals',[]) if a['by']['username'] == 'jenkins']
+        approvals = [a for a in patchset.get('approvals',[]) if a['by'].get('username', 'nobody') == 'jenkins']
         if approvals:
             timestamp = approvals[0]['grantedOn']
         return self.calculate_age(timestamp)
