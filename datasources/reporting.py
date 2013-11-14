@@ -23,12 +23,17 @@ class Report(object):
         self.trusted = kwargs.pop('trusted')
         self.tag = kwargs.pop('tag')
 
-        project = kwargs.pop('project')
-        message_text = kwargs.pop('message_text')
+        query = kwargs.pop('query')
+        if not query:
+            project = kwargs.pop('project')
+            self.query = "status:open project:%s" % project
 
-        self.query = "status:open project:%s" % project
-        if message_text:
-            self.query = "%s message:%s" % (self.query, message_text)
+            message_text = kwargs.pop('message_text')
+            if message_text:
+                self.query = "%s message:%s" % (self.query, message_text)
+
+        else:
+            self.query = query
 
         self.launchpad = Launchpad.login_anonymously(
             'anon', 'https://api.launchpad.net/', CACHE_DIR)
