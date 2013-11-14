@@ -32,5 +32,13 @@ class Tasks(object):
             score = score + Tasks.rank_for(priority)
         return score
 
+    @property
+    def assignees(self):
+        found = {}
+        for entry in self._raw_data['entries']:
+            link = entry['assignee_link']
+            assignee = link[link.rfind('~'):]
+            found[assignee] = link
+        return found
 
 
