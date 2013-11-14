@@ -11,7 +11,7 @@ __author__ = 'hartsocks'
 
 CACHE_DIR = '~/.launchpad_cache'
 
-REPORT_COLUMNS = ['bug_id', 'url', 'priorities', 'rank', 'title', 'changes']
+REPORT_COLUMNS = ['bug_id', 'url', 'priorities', 'rank', 'title', 'changes', 'owner', 'assignees']
 
 Info = collections.namedtuple('Info', ['tasks', 'bug', 'changes'])
 ReportLine = collections.namedtuple('ReportLine', REPORT_COLUMNS)
@@ -46,9 +46,12 @@ class Report(object):
             return None
 
     def tags_for_bug(self, bug_id):
-        bug = self.launchpad.bugs[bug_id]
-        tags = bug.tags
-        return tags
+        try:
+            bug = self.launchpad.bugs[bug_id]
+            tags = bug.tags
+            return tags
+        except KeyError:
+            return []
 
     def sort_report(self, key_lambda=None):
         if key_lambda is None:
@@ -92,7 +95,10 @@ class BugReport(Report):
                 title=info.bug.title,
 
                 # change to list
-                changes = info.changes
+                changes = info.changes,
+
+                owner = info.bug.owner_link,
+                assignees = info.tasks.assignees
             )
             report.append(line)
 
