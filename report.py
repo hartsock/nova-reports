@@ -43,9 +43,19 @@ titles = dict(
 print "Ordered by bug priority:"
 def short_format(line):
     categories = [titles.get(change.category, ' ? ') for change in line.changes]
-    print " %s %s %s" % ( '/'.join(line.priorities), line.url, ','.join(categories))
+    #print " %s %s %s" % ( '/'.join(line.priorities), line.url, ','.join(categories))
+    print "|-"
+    print "| %s" % ('/'.join(line.priorities))
+    print "| %s" % (line.title)
+    print "| %s" % (line.assignees)
+    print "| [%s]" % ('],['.join([ "%s %s" % (change.url, str(change.url)[change.url.rfind('/'):]) for change in line.changes]))
+    print "| %s" % (','.join(categories))
+    print "|-"
 
+print "{|"
 bug_report.write(short_format)
+print "|}"
+
 print
 print "-" * 80
 
