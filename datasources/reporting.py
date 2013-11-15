@@ -76,13 +76,10 @@ class BugReport(Report):
         bugs = {}
         for bug_id in self.gerrit.bugs:
             try:
-                tags = self.tags_for_bug(bug_id)
-                if self.tag in tags:
-                    bug_tasks = self.tasks(bug_id)
-                    bugs[bug_id] = Info(
-                        changes = self.gerrit.get(bug_id),
-                        bug = self.launchpad.bugs[bug_id],
-                        tasks = bug_tasks)
+                if self.tag:
+                    self._filter_by_tag(bug_id, bugs)
+                else:
+                    self._cache_bug_info(bug_id, bugs)
             except KeyError:
                 # could not find bug_id in launchpad
                 print "could not find bug: %s" % bug_id
@@ -109,6 +106,21 @@ class BugReport(Report):
 
         self._data = report
         self._bugs = bugs
+
+    def bug_info(self, bug_id):
+        bug_tasks = self.tasks(bug_id)
+        return Info(
+            changes=self.gerrit.get(bug_id),
+            bug=self.launchpad.bugs[bug_id],
+            tasks=bug_tasks)
+
+    def _cache_bug_info(self, bug_id, bugs):
+        bugs[bug_id] = self.bug_info(bug_id)
+
+    def _filter_by_tag(self, bug_id, bugs):
+        tags = self.tags_for_bug(bug_id)
+        if self.tag in tags:
+            self._cache_bug_info(bug_id, bugs)
 
     @property
     def bug_ids(self):
