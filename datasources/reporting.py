@@ -20,8 +20,8 @@ class Report(object):
 
     def __init__(self, **kwargs):
         self.gerrit_port = kwargs.pop('gerrit_port')
-        self.trusted = kwargs.pop('trusted')
-        self.tag = kwargs.pop('tag')
+        self.trusted = kwargs.get('trusted', [])
+        self.tag = kwargs.get('tag')
 
         query = kwargs.pop('query')
         if not query:
@@ -171,6 +171,22 @@ class ChangeReport(Report):
                 tags = self.tags_for_bug(bug_id)
                 if tag in tags:
                     yield change
+
+    def filter_by_filename(self, filename):
+        for change in self.changes:
+            if change.touches_file_name(filename):
+                yield change
+
+    def changes_by_filename(self, filename, key_lambda):
+        if not key_lambda:
+            key_lambda = lambda change: change.age * -1
+
+        changes = self.filter_by_filename(filename)
+        return sorted(changes, key=key_lambda)
+
+    def report_for_filename(self, filename, key_lambda, formatter):
+        for change in self.changes_by_filename(filename, key_lambda):
+            formatter(change)
 
     def changes_for_tag(self, tag, key_lambda=None):
         if not key_lambda:
