@@ -216,6 +216,10 @@ class Change(object):
         return age.days
 
     @property
+    def last_updated_date(self):
+        return date.fromtimestamp(self.json.get('lastUpdated', 0))
+
+    @property
     def last_updated(self):
         last_updated = self.json['lastUpdated']
         return self.calculate_age(last_updated)
