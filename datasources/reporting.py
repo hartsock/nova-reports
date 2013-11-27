@@ -23,7 +23,7 @@ class Report(object):
         self.trusted = kwargs.get('trusted', [])
         self.tag = kwargs.get('tag')
 
-        query = kwargs.pop('query')
+        query = kwargs.get('query')
         if not query:
             project = kwargs.pop('project')
             self.query = "status:open project:%s" % project
