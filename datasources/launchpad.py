@@ -36,9 +36,10 @@ class Tasks(object):
     def assignees(self):
         found = {}
         for entry in self._raw_data['entries']:
-            link = entry['assignee_link']
-            assignee = link[link.rfind('~'):]
-            found[assignee] = link
+            link = entry.get('assignee_link')
+            if not link is None:
+                assignee = link[link.rfind('~'):]
+                found[assignee] = link
         return found
 
 
