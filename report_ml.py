@@ -47,9 +47,7 @@ def short_format(line):
         '/'.join(line.priorities), ','.join(categories),  line.title,
         '\n\t '.join([ "%s" % (change.url) for change in line.changes]),)
 
-print "{|"
 bug_report.write(short_format)
-print "|}"
 
 print
 print "-" * 80
