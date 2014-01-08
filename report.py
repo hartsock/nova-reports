@@ -40,7 +40,7 @@ titles = dict(
     core="ready for core",
     approval="needs one more +2/approval")
 
-print "Ordered by bug priority:"
+print "Ordered by bug priority (wiki format):"
 def short_format(line):
     categories = [titles.get(change.category, ' ? ') for change in line.changes]
     #print " %s %s %s" % ( '/'.join(line.priorities), line.url, ','.join(categories))
@@ -66,7 +66,7 @@ change_report = datasources.reporting.ChangeReport(
     message_text=options.gerrit_message,
     gerrit_port=options.gerrit_port
 )
-print "Ordered by fitness for review:"
+print "Ordered by fitness for review (wiki format):"
 
 last_category = None
 def long_format(change):
