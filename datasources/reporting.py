@@ -25,8 +25,11 @@ class Report(object):
 
         query = kwargs.get('query')
         if not query:
-            project = kwargs.pop('project')
-            self.query = "status:open project:%s" % project
+            project = kwargs.get('project')
+            if project:
+                self.query = "status:open project:%s" % project
+            else:
+                self.query = "status:open"
 
             message_text = kwargs.pop('message_text')
             if message_text:

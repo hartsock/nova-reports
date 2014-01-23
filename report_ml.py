@@ -9,8 +9,6 @@ parser.add_option("-f", "--format", dest="report_format", default="email",
                   help="generate a report in a given format")
 parser.add_option("-t", "--tag", dest="tag", default="vmware",
                   help="generate a report for a tag")
-parser.add_option("-p", "--project", dest="project_name", default="openstack/nova",
-                  help="generate a report for a project")
 parser.add_option("-m", "--message", dest="gerrit_message", default=None,
                   help="text to look for in gerrit messages")
 parser.add_option("-l", "--trusted-list", dest="trusted_list_str", default="",
@@ -55,7 +53,6 @@ print "-" * 80
 change_report = datasources.reporting.ChangeReport(
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
-    project=options.project_name,
     message_text=options.gerrit_message,
     gerrit_port=options.gerrit_port
 )
