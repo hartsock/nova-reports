@@ -25,7 +25,6 @@ print
 bug_report = datasources.reporting.BugReport(
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
-    project=options.project_name,
     message_text=options.gerrit_message,
     gerrit_port=options.gerrit_port
 )
