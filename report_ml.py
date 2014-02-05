@@ -15,6 +15,8 @@ parser.add_option("-l", "--trusted-list", dest="trusted_list_str", default="",
                   help="list of trusted reviewers, comma delimited")
 parser.add_option("-g", "--gerrit-port", dest="gerrit_port",
                   help="Port number to use when working with gerrit via ssh.")
+parser.add_option("-p", "--project", dest="project_name", default="openstack/nova",
+                  help="generate a report for a project")
 (options, args) = parser.parse_args()
 
 print "Starting report run..."
@@ -25,6 +27,7 @@ print
 bug_report = datasources.reporting.BugReport(
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
+    project=options.project_name,
     message_text=options.gerrit_message,
     gerrit_port=options.gerrit_port
 )
@@ -70,4 +73,4 @@ def long_format(change):
     print "\tvotes: +2:%s, +1:%s, -1:%s, -2:%s." % (v.get('2',0), v.get('1',0), v.get('-1',0), v.get('-2', 0)),
     print "+%s days in progress, revision: %s is %s days old " % (change.total_age, change.revision, change.age)
 
-change_report.report_for_tag('vmware', lambda change: change.category, long_format)
+change_report.report_for_filename('vmware', lambda change: change.category, long_format)

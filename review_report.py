@@ -5,7 +5,7 @@ from optparse import OptionParser
 __author__ = 'hartsocks'
 
 parser = OptionParser()
-parser.add_option("-f", "--filename", dest="filename", default="vmwareapi",
+parser.add_option("-f", "--filename", dest="filename", default="vmware",
                   help="generate a report for a filename pattern")
 parser.add_option("-q", "--query", dest="query", default="is:open project:openstack/nova",
                   help="query for gerrit")
