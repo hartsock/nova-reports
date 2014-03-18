@@ -1,3 +1,4 @@
+import datasources.categorizers
 import datasources.reporting
 import datetime
 from optparse import OptionParser
@@ -13,7 +14,7 @@ parser.add_option("-m", "--message", dest="gerrit_message", default=None,
                   help="text to look for in gerrit messages")
 parser.add_option("-l", "--trusted-list", dest="trusted_list_str", default="",
                   help="list of trusted reviewers, comma delimited")
-parser.add_option("-g", "--gerrit-port", dest="gerrit_port",
+parser.add_option("-g", "--gerrit-port", dest="gerrit_port", default=29418,
                   help="Port number to use when working with gerrit via ssh.")
 parser.add_option("-p", "--project", dest="project_name", default="openstack/nova",
                   help="generate a report for a project")
@@ -25,6 +26,9 @@ print datetime.date.today()
 print
 
 bug_report = datasources.reporting.BugReport(
+    datasources.categorizers.FitnessCategorizer(
+        options.trusted_list_str.split(',')
+    ),
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
     project=options.project_name,
@@ -43,7 +47,8 @@ titles = dict(
 print "Ordered by bug priority:"
 def short_format(line):
     categories = [titles.get(change.category, ' ? ') for change in line.changes]
-    print "* %s, %s : '%s' \n\t %s" % (
+    print "* %s %s %s, %s : '%s' \n\t %s" % (
+        change.project, change.branch,
         '/'.join(line.priorities), ','.join(categories),  line.title,
         '\n\t '.join([ "%s" % (change.url) for change in line.changes]),)
 
@@ -53,6 +58,9 @@ print
 print "-" * 80
 
 change_report = datasources.reporting.ChangeReport(
+    datasources.categorizers.FitnessCategorizer(
+        options.trusted_list_str.split(',')
+    ),
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
     message_text=options.gerrit_message,

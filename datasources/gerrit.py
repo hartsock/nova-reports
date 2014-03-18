@@ -16,7 +16,7 @@ LOAD_COMMAND = 'ssh  -p %s review.openstack.org gerrit query --format json --all
 # https://review.openstack.org/Documentation/json.html
 class Gerrit(object):
 
-    def __init__(self, query, port, categorizer=None):
+    def __init__(self, query, port=29418, categorizer=None):
         self._changes = []
         self._bug_ids = []
         self._blueprint_ids = []
@@ -254,19 +254,41 @@ class Change(object):
             tail = "..."
         return message[:i] + tail
 
+    @property
+    def project(self):
+        return self.json['project']
+
+    @property
+    def branch(self):
+        return self.json['branch']
+
     def touches_file_name(self, file_name):
         for json in self.last_patchset['files']:
             if file_name in json['file']:
                 return True
         return False
 
-
 class Categorizer(object):
 
+    def __init__(self):
+        pass
+
+    def category_name(self, identifier):
+        pass
+
+    def categorize(self, change):
+        pass
+
+class FitnessCategorizer(Categorizer):
+
     def __init__(self, trusted):
+        super(FitnessCategorizer, self).__init__()
         self._trusted = trusted
         self._categories = dict(unknown=-1, revise=0, review=1, core=2, approval=3)
         self._category_list = ['revise', 'review', 'core', 'approval']
+
+    def category_name(self, identifier):
+        return self._category_list[identifier]
 
     @staticmethod
     def has_trusted(voters, trusted):
@@ -280,6 +302,11 @@ class Categorizer(object):
             if not (trustee in voters):
                 return False
         return True
+
+    @staticmethod
+    def has_passing_tests(voters):
+        ci_systems = ['jenkins', 'vmwareminesweeper']
+        return FitnessCategorizer.all_trusted(voters, ci_systems)
 
     def categorize(self, change):
         trusted = self._trusted
@@ -295,9 +322,10 @@ class Categorizer(object):
             return 'revise'
 
         category = 1
-        if Categorizer.has_trusted(vote_detail.get('1', []), trusted):
-            if 2 < len(vote_detail.get('1',[])):
-                category = 2
+        if FitnessCategorizer.has_trusted(vote_detail.get('1', []), trusted):
+            if FitnessCategorizer.has_passing_tests(vote_detail.get('1', [])):
+                if 2 < len(vote_detail.get('1',[])):
+                    category = 2
         elif 4 < len(vote_detail.get('1',[])):
             # 2 votes come from jenkins
             category = 2
@@ -305,4 +333,4 @@ class Categorizer(object):
         if len(vote_detail.get('2', [])):
             category = 3
 
-        return self._category_list[category]
+        return self.category_name(category)

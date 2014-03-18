@@ -1,4 +1,5 @@
 import datasources.reporting
+import datasources.categorizers
 import datetime
 from optparse import OptionParser
 
@@ -25,6 +26,9 @@ print datetime.date.today()
 print
 
 bug_report = datasources.reporting.BugReport(
+    datasources.categorizers.FitnessCategorizer(
+        options.trusted_list_str.split(',')
+    ),
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
     project=options.project_name,
@@ -60,6 +64,9 @@ print
 print "-" * 80
 
 change_report = datasources.reporting.ChangeReport(
+    datasources.categorizers.FitnessCategorizer(
+        options.trusted_list_str.split(',')
+    ),
     trusted=options.trusted_list_str.split(','),
     tag=options.tag,
     project=options.project_name,

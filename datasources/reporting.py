@@ -1,5 +1,6 @@
 import StringIO
 import collections
+import datasources.categorizers
 import datasources.gerrit
 import datasources.launchpad
 
@@ -18,7 +19,7 @@ ReportLine = collections.namedtuple('ReportLine', REPORT_COLUMNS)
 
 class Report(object):
 
-    def __init__(self, **kwargs):
+    def __init__(self, categorizer, **kwargs):
         self.gerrit_port = kwargs.pop('gerrit_port')
         self.trusted = kwargs.get('trusted', [])
         self.tag = kwargs.get('tag')
@@ -41,7 +42,7 @@ class Report(object):
         self.launchpad = Launchpad.login_anonymously(
             'anon', 'https://api.launchpad.net/', CACHE_DIR)
 
-        self.categorizer = datasources.gerrit.Categorizer(self.trusted)
+        self.categorizer = categorizer
         self.gerrit = datasources.gerrit.Gerrit(self.query, self.gerrit_port, self.categorizer)
         self._data = []
 
@@ -74,8 +75,8 @@ class Report(object):
 class BugReport(Report):
     # a report that is bug centric
 
-    def __init__(self,**kwargs):
-        super(BugReport, self).__init__(**kwargs)
+    def __init__(self, categorizer,**kwargs):
+        super(BugReport, self).__init__(categorizer, **kwargs)
         bugs = {}
         for bug_id in self.gerrit.bugs:
             try:
@@ -159,8 +160,8 @@ class BugReport(Report):
 
 class ChangeReport(Report):
 
-    def __init__(self, **kwargs):
-        super(ChangeReport, self).__init__(**kwargs)
+    def __init__(self, categorizer, **kwargs):
+        super(ChangeReport, self).__init__(categorizer, **kwargs)
         self._data = self.gerrit.changes
 
     @property
